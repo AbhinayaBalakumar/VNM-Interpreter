@@ -1,0 +1,61 @@
+start ::= (statement | expression) ";" | EOF
+
+statement ::= var_decl | fn_decl | return_stat | print_stat | println_stat | assign_stat | if_stat | for_stat | while_stat
+
+body ::= (statement ";")*
+
+clause ::= (statement ";")+
+
+var_decl ::= VAR ident_list
+
+fn_decl ::= FUNCTION identifier "(" (ident_list)? ")" body END
+
+ident_list ::= identifier ("," identifier)*
+
+fn_call ::= identifier "(" (exp_list)? ")"
+
+exp_list ::= expression ("," expression)*
+
+return_stat ::= RETURN (condition | expression)
+
+print_stat ::= PRINT print_list
+
+println_stat ::= PRINTLN (print_list)?
+
+print_list ::= (expression | STRING) ("," (expression | STRING))*
+
+assign_stat ::= IDNUM ":=" expression | IDBOOL ":=" condition | IDVEC ":=" vec_const
+
+if_stat ::= IF condition THEN clause elifs (ELSE clause)? FI
+
+elifs ::= (ELIF condition THEN clause)*
+
+for_stat ::= FOR IDNUM IN exp_list DO body END
+
+while_stat ::= WHILE condition DO body END
+
+condition ::= and_clause ("|" and_clause)*
+
+and_clause ::= not_clause ("&" not_clause)*
+
+not_clause ::= "!" not_clause | "(" condition ")" | comparison | fn_call | bool_literal
+
+comparison ::= expression comparator expression
+
+expression ::= ("+" | "-")? product (("+" | "-") product)*
+
+product ::= term (("*" | "/" | "%") term)*
+
+term ::= "(" expression ")" | fn_call | simple_term
+
+simple_term ::= IDNUM | IDBOOL | IDVEC | NUMBER | vec_const
+
+vec_const ::= "[" (exp_list)? "]"
+
+comparator ::= "<" | "<=" | ">" | ">=" | "==" | "!=" | "=in" | "!in"
+
+identifier ::= IDNUM | IDBOOL | IDVEC
+
+bool_literal ::= IDBOOL | TRUE | FALSE
+
+
