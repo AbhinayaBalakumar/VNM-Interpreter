@@ -1,0 +1,151 @@
+void ident_list() :
+{}
+{ identifier() ("," identifier())*
+}
+void fn_call() :
+{}
+{ identifier() "(" exp_list_opt() ")"
+void exp_list_opt() :
+{}
+{ exp_list()
+| ε
+}
+void exp_list() :
+{}
+{ expression() ("," expression())*
+}
+void return_stat() :
+{}
+{ <RETURN> (expression()
+| condition())
+}
+void print_stat() :
+{}
+{ <PRINT> print_list()
+void println_stat() :
+{}
+{ <PRINTLN> print_list_opt()
+void print_list_opt() :
+{}
+{ print_list()
+| ε
+}
+void print_list() :
+{}
+{ (expression()
+| <STRING>) ("," (expression()
+| <STRING>))*
+}
+void assign_stat() :
+{}
+{ <IDNUM> "=" expression()
+| <IDBOOL> "=" condition()
+| <IDVEC> "=" vec_const()
+}
+void if_stat() :
+{}
+{ <IF> condition() <THEN> clause() elifs() else_opt() <FI>
+void else_opt() :
+{}
+{ <ELSE> clause()
+| ε
+void elifs() :
+{}
+{ (<ELIF> condition() <THEN> clause())*
+}
+void for_stat() :
+{}
+{ <FOR> <IDNUM> <IN> exp_list() <DO> body() <END>
+void while_stat() :
+{}
+{ <WHILE> condition() <DO> body() <END>
+}
+void condition() :
+{}
+{ and_clause() condition()<T>ail()
+void condition()<T>ail() :
+{}
+{ "|" and_clause() condition()<T>ail()
+| ε
+}
+void and_clause() :
+{}
+{ not_clause() and()<T>ail()
+void and()<T>ail() :
+{}
+{ "&" not_clause() and()<T>ail()
+| ε
+}
+void not_clause() :
+{}
+{ "!" not_clause()
+| "(" condition() ")"
+| comparison()
+| fn_call()
+| boolean()
+}
+void comparison() :
+{}
+{ expression() comparator() expression()
+}
+void expression() :
+{}
+{ ("+"
+| "-")? product() expression()<T>ail()
+void expression()<T>ail() :
+{}
+{ ("+"
+| "-") product() expression()<T>ail()
+| ε
+}
+void product() :
+{}
+{ term() product()<T>ail()
+void product()<T>ail() :
+{}
+{ ("*"
+| "/"
+| "%") term() product()<T>ail()
+| ε
+}
+void term() :
+{}
+{ "(" expression() ")"
+| fn_call()
+| simple_term()
+}
+void simple_term() :
+{}
+{ <IDNUM>
+| <IDVEC>
+| <NUMBER>
+| vec_const()
+}
+void vec_const() :
+{}
+{ "[" exp_list_opt() "]"
+}
+void comparator() :
+{}
+{ "<"
+| "<="
+| ">"
+| ">="
+| "=="
+| "!="
+| "=in()"
+| "!in()"
+}
+void identifier() :
+{}
+{ <IDNUM>
+| <IDBOOL>
+| <IDVEC>
+}
+void boolean() :
+{}
+{ <IDBOOL>
+| <TRUE>
+| <FALSE>
+
+
