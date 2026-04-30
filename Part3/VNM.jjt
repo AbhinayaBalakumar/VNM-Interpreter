@@ -1,0 +1,352 @@
+options {
+  IGNORE_CASE=false;
+  MULTI=true;
+  JJTREE_OUTPUT_DIRECTORY="AST";
+  VISITOR=true;
+VISITOR_EXCEPTION="Exception";
+}
+
+PARSER_BEGIN(VNM)
+public class VNM {
+}
+PARSER_END(VNM)
+
+TOKEN_MGR_DECLS : 
+{
+}
+
+SKIP : {
+  " " | "\t" | "\n" | "\r" 
+}
+
+TOKEN : 
+{
+  < LESS: "<">
+| < LE: "<=" >
+| < GREAT: ">" >
+| < GE: ">=" >
+| < EQ: "==" >
+| < NEQ: "!=" >
+| < IN: "=in" >
+| < NOTIN: "!in" >
+| < PLUS: "+" >
+| < MINUS: "-" >
+| < TIMES: "*" >
+| < DIV: "/" >
+| < MOD: "%" >
+| < AND: "&" >
+| < VBAR: "|" >
+| < NOT: "!" >
+| < ASSGN: ":=" >
+| < LRND: "(" >
+| < LSQU: "[" >
+| < RRND: ")" >
+| < RSQU: "]" >
+| < COMMA: "," >
+| < SCOL: ";" >
+| < TRUE: "#1" >
+| < FALSE: "#0" >
+| < RANGE: ".." >
+}
+
+TOKEN [IGNORE_CASE]:
+{
+  < DO:"DO">
+| < WHILE:"WHILE">
+| < FOR:"FOR">
+| < IF:"IF">
+| < THEN:"THEN">
+| < ELIF:"ELIF">
+| < ELSE:"ELSE">
+| < FI:"FI">
+| < FUNCTION:"FUNCTION">
+| < RETURN:"RETURN">
+| < END:"END">
+| < PRINT:"PRINT">
+| < PRINTLN:"PRINTLN">
+| < VAR:"VAR">
+}
+
+TOKEN : 
+{
+  < #DIGIT: ["0"-"9"]>
+| < #LOWER: ["a"-"z"]>
+| < #UPPER: ["A"-"Z"]>
+| < #LETTER: ["a"-"z","A"-"Z"]>
+| < STRING: "\"" (~["\""])* "\"" > 
+| < NUMBER: (<DIGIT>)+ >
+| < IDNUM: "#" <LETTER>(<LETTER>|<DIGIT>)* >  
+| < IDBOOL: "?" <LETTER>(<LETTER>|<DIGIT>)* >
+| < IDVEC: "v_" (<LETTER>|<DIGIT>)+ >  
+}
+
+SPECIAL_TOKEN : 
+{
+  <COMMENT_SINGLE: "//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")>
+}
+
+SimpleNode start() #void :        // JJTree: start node
+{}
+{ S() { return (SimpleNode) (jjtree.popNode()); }
+| < EOF > {throw new ParseException("End of File.");}
+}
+
+void S() #void :                  // JJTree: S node
+{}
+{ statement_LL1() ";"
+| LOOKAHEAD(identifier() ":=") assign_stat() ";" 
+| expression() ";" 
+| boolean_call() ";"
+}
+
+void statement_LL1() #void :      // JJTree: statement node
+{}
+{ var_decl()
+| fn_decl()
+| return_stat()
+| print_stat()
+| println_stat()
+| if_stat()
+| for_stat()
+| while_stat()
+}
+
+void statement() #void :          // JJTree: statement (with fn/assign) node
+{}
+{ statement_LL1()
+| LOOKAHEAD(2) fn_call()
+| assign_stat()
+}
+
+void body() :
+{}
+{ (statement() ";")* 
+}
+
+void clause() :
+{}
+{ (statement() ";")+
+}
+
+void var_decl() :
+{Token t;}
+{ <VAR> identifier() ("," identifier())*
+}
+
+void fn_decl() :
+{}
+{ <FUNCTION> identifier() "(" (ident_list())? ")" body() <END>
+}
+
+void ident_list() :
+{}
+{ identifier() ("," identifier())*
+}
+
+void fn_call() :
+{}
+{ idnum() "(" (exp_list())? ")"
+| idvec() "(" (exp_list())? ")"
+}
+
+void boolean_call() #fn_call :    // JJTree: boolean_call becomes fn_call node
+{}
+{ idbool() "(" (exp_list())? ")"
+}
+
+void exp_list() :
+{}
+{ expression() ("," expression())*
+}
+
+void condition_list() :
+{}
+{ condition() ("," condition())*
+}
+
+void return_stat() #Return :      // JJTree: Return node
+{}
+{ <RETURN> returnval()
+}
+
+void returnval() #void :          // JJTree: return value node
+{}
+{ LOOKAHEAD(condition()) condition()
+| expression() 
+}
+
+void print_stat() #Print :        // JJTree: Print node
+{}
+{ <PRINT> print_list()
+}
+
+void println_stat() #Print_ln :   // JJTree: PrintLn node
+{}
+{ <PRINTLN> (print_list())?
+}
+
+void print_list() #void :         // JJTree: print list node
+{Token t;}
+{ (expression() | string() | idbool()) ("," (expression() | string() | idbool()))*
+}
+
+void assign_stat() #Assign :      // JJTree: Assign node
+{}
+{ idbool() ":=" condition()
+| idnum() ":=" expression()
+| idvec() ":=" vec_const()
+}
+
+void if_stat() #If :              // JJTree: If node
+{}
+{ <IF> condition() <THEN> clause() else_clause()  <FI>
+}
+
+void else_clause() #void :        // JJTree: Else/Elif chain node
+{}
+{ <ELIF> condition() <THEN> clause() else_clause() #If(3)   // JJTree: ELIF becomes If node
+| <ELSE> clause()
+| {} #NULL                                     // JJTree: empty else → NULL
+}
+
+void for_stat() #For :            // JJTree: For node
+{}
+{ <FOR> idnum() <IN> exp_list() <DO> body() <END>
+}
+
+void while_stat() #While :        // JJTree: While node
+{}
+{ <WHILE> condition() <DO> body() <END>
+}
+
+void condition() #void :          // JJTree: OR-node if >1 term
+{}
+{ ( and_clause() ("|" and_clause())* ) #or(>1)
+}
+
+void and_clause() #void :         // JJTree: AND-node if >1 term
+{}
+{ ( not_clause() ("&" not_clause())* ) #and(>1)
+}
+
+void not_clause() #void :         // JJTree: NOT-node
+{}
+{ "!" not_clause() #not(1)
+| LOOKAHEAD(3) "(" condition() ")"
+| LOOKAHEAD(2) boolean_call()
+| LOOKAHEAD(expression() comparator()) comparison() 
+| bool_simple()
+}
+
+void comparison() :
+{}
+{ expression() comparator() expression()
+}
+
+void comparator() #void :         // JJTree: comparator operator node
+{Token t;}
+{ t=<LESS> #le
+| t=<LE> #leq
+| t=<GREAT> #gre
+| t=<GE> #geq
+| t=<EQ> #eq
+| t=<NEQ> #neq
+| t=<IN> #in
+| t=<NOTIN> #notin
+}
+
+void expression() #void :         // JJTree: sum node
+{}
+{ (<MINUS> product() #neg(1) (addop())*) #sum
+| LOOKAHEAD((<PLUS>)? product() (<PLUS>|<MINUS>))
+  ((<PLUS>)? product() (addop())+) #sum
+| (<PLUS>)? product()
+}
+
+void addop() #void :              // JJTree: add/sub node
+{}
+{ <PLUS> product() #pos(1)
+| <MINUS> product() #neg(1)
+}
+
+void product() #void :            // JJTree: mul/div/mod node
+{Token t;}
+{ term() 
+  (t=<TIMES> term() #mul(2)
+  | t=<DIV> term() #div(2)
+  | t=<MOD> term() #mod(2)
+  )*
+}
+
+void term() #void :               // JJTree: term node
+{}
+{ "(" expression() ")"
+| LOOKAHEAD(2) fn_call()
+| simple_term()
+}
+
+void simple_term() #void :        // JJTree: simple leaf node
+{}
+{ idnum()
+| idvec()
+| number()
+| vec_const() 
+}
+
+void vec_const() :
+{}
+{ LOOKAHEAD("[" expression()) "[" (exp_list())? "]"
+| "[" (condition_list())? "]"
+}
+
+void identifier() #void :         // JJTree: identifier node
+{}
+{ idnum()
+| idbool()
+| idvec() 
+}
+
+void bool_simple() #void :        // JJTree: simple boolean node
+{}
+{ idbool()
+| true_const()
+| false_const()
+}
+
+void idnum() :
+{Token t;}
+{ t=<IDNUM> { jjtThis.jjtSetValue(t.image); }   // JJTree: store value
+}
+
+void idvec() :
+{Token t;}
+{ t=<IDVEC> { jjtThis.jjtSetValue(t.image); }   // JJTree: store value
+}
+
+void idbool() :
+{Token t;}
+{ t=<IDBOOL> { jjtThis.jjtSetValue(t.image); }  // JJTree: store value
+}
+
+void number() :
+{Token t;}
+{ t=<NUMBER> { jjtThis.jjtSetValue(t.image); }  // JJTree: store numeric literal
+}
+
+void string() :
+{Token t;}
+{ t=<STRING> { jjtThis.jjtSetValue(t.image.substring(1, t.image.length()-1)); } // JJTree: strip quotes
+}
+
+void true_const() #TRUE :         // JJTree: TRUE literal node
+{}
+{ <TRUE>
+}
+
+void false_const() #FALSE :       // JJTree: FALSE literal node
+{}
+{ <FALSE>
+}
+
+
+
