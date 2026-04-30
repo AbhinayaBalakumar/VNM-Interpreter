@@ -1,0 +1,129 @@
+options {
+  STATIC = false;
+}
+PARSER_BEGIN(VNM)
+public class VNM
+{
+  // Nothing to do here for Part #1
+}
+PARSER_END(VNM)
+TOKEN_MGR_DECLS :
+{
+  // Nothing to do here for Part #1
+}
+// Characters/strings to be skipped
+SKIP :
+{
+        " "
+    |   "\t"
+    |   "\n"
+    |   "\r"
+}
+// Handle single-line comments
+SPECIAL_TOKEN :
+{
+  <SINGLE_LINE_COMMENT: "//" (~["\n","\r"])* ("\n"|"\r"|"\r\n")?>
+}
+// Comparison operators - CORRECT ORDER (longest first)
+TOKEN :
+{
+  < NOTIN: "!in" >
+| < IN: "=in" >
+| < LE: "<=" >
+| < LESS: "<" >
+| < GE: ">=" >
+| < GREAT: ">" >
+| < NEQ: "!=" >
+| < EQ: "==" >
+| < NOT: "!" >
+}
+// Arithmetic operators
+TOKEN :
+{
+  < PLUS: "+" >
+| < MINUS: "-" >
+| < PROD: "*" >
+| < DIV: "/" >
+}
+// Logical operators
+TOKEN :
+{
+  < AND: "&" >
+| < OR: "|" >
+}
+// Assignment
+TOKEN :
+{
+  < ASSGN: ":=" >
+}
+// Brackets and punctuation
+TOKEN :
+{
+  < LRND: "(" >
+| < RRND: ")" >
+| < LSQU: "[" >
+| < RSQU: "]" >
+| < COMMA: "," >
+| < SCOL: ";" >
+}
+// Boolean literals
+TOKEN :
+{
+  < TRUE: "#1" >
+| < FALSE: "#0" >
+}
+// Range operator - FIXED: three dots
+TOKEN :
+{
+  < RANGE: ".." >
+}
+// Keywords (case insensitive)
+TOKEN [IGNORE_CASE]:
+{
+  < DO: "DO" >
+| < FOR: "FOR" >
+| < WHILE: "WHILE" >
+| < IF: "IF" >
+| < THEN: "THEN" >
+| < ELIF: "ELIF" >
+| < ELSE: "ELSE" >
+| < FI: "FI" >
+| < FUNCTION: "FUNCTION" >
+| < RETURN: "RETURN" >
+| < END: "END" >
+| < PRINT: "PRINT" >
+| < PRINTLN: "PRINTLN" >
+| < VAR: "VAR" >
+}
+// IDNUM - starts with # and a letter, followed by letters/digits
+TOKEN :
+{
+  < IDNUM: "#" ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9"])* >
+}
+// IDBOOL - starts with ? and a letter, followed by letters/digits
+TOKEN :
+{
+  < IDBOOL: "?" ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9"])* >
+}
+// IDVEC - starts with v_, followed by letters/digits
+TOKEN :
+{
+  < IDVEC: "v_" (["a"-"z","A"-"Z","0"-"9"])+ >
+}
+// IDMAT - starts with M_, followed by letters/digits
+TOKEN :
+{
+  < IDMAT: "M_" (["a"-"z","A"-"Z","0"-"9"])+ >
+}
+// NUMBER - one or more digits
+TOKEN :
+{
+  < #DIGIT: ["0"-"9"] >
+| < NUMBER: (<DIGIT>)+ >
+}
+// STRING - delimited by double quotes with escape sequences
+TOKEN :
+{
+  < STRING: "\"" (~["\"","\\","\n","\r"] | "\\" ("n"|"t"|"\""|"\\"))* "\"" >
+}
+
